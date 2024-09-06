@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from openai import OpenAI
 from enum import Enum
 from typing import ForwardRef, Union
+import json
 
 client = OpenAI()
 
@@ -34,24 +35,31 @@ class Model(BaseModel):
 
 
 system_prompt = """
-    all_teachers is the name of an audience containing all teachers.
-    all_drivers is the name of an audience containing all drivers.
-    all_parents is the name of an audience containing all parents.
+An audience is a list of people.
+all_teachers is the name of an audience containing teachers.
+all_drivers is the name of an audience containing drivers.
+all_parents is the name of an audience containing parents.
+audiences may be combined using set operators such as "or", "and", and "not"
 """
 
-completion = client.beta.chat.completions.parse(
-    model="gpt-4o-2024-08-06",
-    messages=[
-        {"role": "system", "content": system_prompt},
-        {
-            "role": "user",
-            # "content": "give me an audience that are both teachers and drivers but not parents"
-            "content": "give me an audience that are teachers and drivers, or parents"
-        },
-    ],
-    response_format=Model,
-)
+while (True):
+    print("Please type an prompt:")
+    prompt = input()
+    completion = client.beta.chat.completions.parse(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": prompt
+            },
+        ],
+        response_format=Model,
+    )
+    json_data = completion.choices[0].message.content
+    obj = json.loads(json_data)
+    json_formatted_str = json.dumps(obj, indent=4)
+    print(json_formatted_str)
 
-message = completion.choices[0].message
 
-print(message)
+
